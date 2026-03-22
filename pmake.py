@@ -53,19 +53,3 @@ async def compile(target: Target):
     await result.wait()
     if result.returncode is None or result.returncode != 0:
         raise subprocess.CalledProcessError(result.returncode or -1, target.path)
-
-
-# Example usage
-@dataclass
-class CTarget(Target):
-    std: str = "c23"
-
-
-def compile_ctarget(target: CTarget) -> list[str]:
-    inputs = [str(dep) for dep in target.depends]
-    return ["gcc", *inputs, f"--std={target.std}", "-o", str(target.path)]
-
-
-main = CTarget(path=Path("./main"), depends=[Path("./main.c")], command=compile_ctarget)
-register_target(main)
-asyncio.run(compile(main))
