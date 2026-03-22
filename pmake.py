@@ -60,5 +60,6 @@ def compile_cmd(target: Target) -> list[str]:
     return ["gcc", *inputs, "-o", str(target.path)]
 
 
+# Example usage
 main = target(path=Path("./main"), depends=[Path("./main.c")], command=compile_cmd)
 asyncio.run(compile(main))
