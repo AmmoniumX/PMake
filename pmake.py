@@ -2,21 +2,21 @@ import asyncio
 import subprocess
 from pathlib import Path
 from dataclasses import dataclass
-from typing import Callable
+from typing import Callable, Self
 
 
 @dataclass
 class Target:
     path: Path
     depends: list[Path]
-    command: Callable[[Target], list[str]]
+    # command may take the same class as Self, including derived subclasses
+    command: Callable[[Self], list[str]]
 
 
 target_builders: dict[Path, Target] = dict()
 
 
-def target(path: Path, depends: list[Path], command: Callable[[Target], list[str]]):
-    t = Target(path, depends, command)
+def register_target(t: Target):
     if t.path in target_builders:
         raise Exception("path already has a target")
     target_builders[t.path] = t
@@ -55,11 +55,17 @@ async def compile(target: Target):
         raise subprocess.CalledProcessError(result.returncode or -1, target.path)
 
 
-def compile_cmd(target: Target) -> list[str]:
-    inputs = [str(dep) for dep in target.depends]
-    return ["gcc", *inputs, "-o", str(target.path)]
-
-
 # Example usage
-main = target(path=Path("./main"), depends=[Path("./main.c")], command=compile_cmd)
+@dataclass
+class CTarget(Target):
+    std: str = "c23"
+
+
+def compile_ctarget(target: CTarget) -> list[str]:
+    inputs = [str(dep) for dep in target.depends]
+    return ["gcc", *inputs, f"--std={target.std}", "-o", str(target.path)]
+
+
+main = CTarget(path=Path("./main"), depends=[Path("./main.c")], command=compile_ctarget)
+register_target(main)
 asyncio.run(compile(main))
