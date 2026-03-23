@@ -1,7 +1,7 @@
 from pathlib import Path
 import asyncio
 from dataclasses import dataclass
-from .. import pmake
+import PMake
 
 
 ### Example Usage: Custom Target derived class ###
@@ -11,7 +11,7 @@ from .. import pmake
 #  This is optional, useful for storing extra metadata
 #  for your target such as `std`
 @dataclass
-class CTarget(pmake.Target):
+class CTarget(PMake.Target):
     std: str = "c23"
 
 
@@ -32,7 +32,7 @@ def compile_ctarget(target: CTarget) -> list[str]:
 main = CTarget(path=Path("./main"), depends=[Path("./main.c")], command=compile_ctarget)
 
 # We register the target, this is needed so we can find how to build missing dependencies
-pmake.register_target(main)
+PMake.register_target(main)
 
 # Finally, compile our target. This can compile dependencies asynchronously
-asyncio.run(pmake.compile(main))
+asyncio.run(PMake.compile(main))
