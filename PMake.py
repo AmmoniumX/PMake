@@ -5,7 +5,7 @@ from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Callable, Self, cast
 
-type StrPath = str | os.PathLike[str]
+type StrPath = str | os.PathLike
 
 target_builders: dict[Path, Target] = dict()
 
