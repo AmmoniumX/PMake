@@ -55,7 +55,6 @@ def is_stale(target: Target) -> bool:
         return True
     target_mtime = path.stat().st_mtime
 
-    dep: Path
     for dep in deps:
         if dep.is_file() and dep.stat().st_mtime > target_mtime:
             return True
