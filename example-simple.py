@@ -18,7 +18,7 @@ def compile_target(target: PMake.Target) -> list[str]:
 # depends: list of paths for the files that this depends on
 #  - if missing dependencies have a target, it will compile those first
 #  - if they don't have a target, this is an error
-# command: function that takes a Target, and returns a list of command arguments
+# command: either a list of command arguments, or a function that takes a Target and returns one
 main = PMake.Target(path="./main", depends=["./main.c"], command=compile_target)
 
 # Finally, compile our target. This can compile dependencies asynchronously
