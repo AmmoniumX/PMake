@@ -1,7 +1,5 @@
-from pathlib import Path
 import asyncio
 import PMake
-
 
 ### Example Usage: basic PMake usage ###
 CC = "gcc"
@@ -21,13 +19,8 @@ def compile_target(target: PMake.Target) -> list[str]:
 #  - if missing dependencies have a target, it will compile those first
 #  - if they don't have a target, this is an error
 # command: function that takes a Target, and returns a list of command arguments
-main = PMake.Target(
-    path=Path("./main"), depends=[Path("./main.c")], command=compile_target
-)
-
-# We register the target, this is needed so we can find how to build missing dependencies
-PMake.register_target(main)
+main = PMake.Target(path="./main", depends=["./main.c"], command=compile_target)
 
 # Finally, compile our target. This can compile dependencies asynchronously
 # This will also recompile the target if the dependencies are newer than itself
-asyncio.run(PMake.compile(main))
+asyncio.run(PMake.build_target(main))

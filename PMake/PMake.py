@@ -1,26 +1,37 @@
 import asyncio
 import subprocess
 from pathlib import Path
-from dataclasses import dataclass
-from typing import Callable, Self
+from dataclasses import dataclass, field
+from typing import Callable, Self, cast
 
-
-@dataclass
-class Target:
-    path: Path
-    depends: list[Path]
-    # command may take the same class as Self, including derived subclasses
-    command: Callable[[Self], list[str]]
-
+type PathArg = Path | str
 
 target_builders: dict[Path, Target] = dict()
 
 
 def register_target(t: Target):
+    path = cast(Path, t.path)  # We know its Path from postinit
     if t.path in target_builders:
-        raise Exception("path already has a target")
-    target_builders[t.path] = t
+        raise Exception(f"There is already a target for the path {t.path}")
+    target_builders[path] = t
+
     return t
+
+
+@dataclass()
+class Target:
+    path: PathArg
+    depends: list[PathArg]
+    # command may take the same class as Self, including derived subclasses
+    command: Callable[[Self], list[str]]
+    auto_register: bool = field(default=True, repr=False)
+
+    def __post_init__(self):
+        self.path = Path(self.path)
+        self.depends = [Path(dep) for dep in self.depends]
+
+        if self.auto_register:
+            register_target(self)
 
 
 def is_stale(target: Target) -> bool:
@@ -30,18 +41,25 @@ def is_stale(target: Target) -> bool:
     - it doesn't exist yet, or
     - any dependency is newer than the target itself.
     """
-    if not target.path.is_file():
+
+    # Inform the type checker we know path and deps are Path from postinit
+    path = cast(Path, target.path)
+    deps = cast(list[Path], target.depends)
+
+    if not path.is_file():
         return True
-    target_mtime = target.path.stat().st_mtime
-    for dep in target.depends:
+    target_mtime = path.stat().st_mtime
+
+    dep: Path
+    for dep in deps:
         if dep.is_file() and dep.stat().st_mtime > target_mtime:
             return True
     return False
 
 
-async def compile(target: Target):
+async def build_target(target: Target):
     deps = [target_builders[dep] for dep in target.depends if dep in target_builders]
-    await asyncio.gather(*[compile(dep) for dep in deps])
+    await asyncio.gather(*[build_target(dep) for dep in deps])
 
     if not is_stale(target):
         print(f"{target.path} is up to date.")
@@ -51,5 +69,5 @@ async def compile(target: Target):
     print(f"{target.path}:", *command)
     result = await asyncio.create_subprocess_exec(*command)
     await result.wait()
-    if result.returncode is None or result.returncode != 0:
+    if result.returncode != 0:
         raise subprocess.CalledProcessError(result.returncode or -1, target.path)
