@@ -1,10 +1,11 @@
 import asyncio
 import subprocess
+import os
 from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Callable, Self, cast
 
-type PathArg = Path | str
+type StrPath = str | os.PathLike[str]
 
 target_builders: dict[Path, Target] = dict()
 
@@ -20,8 +21,8 @@ def register_target(t: Target):
 
 @dataclass()
 class Target:
-    path: PathArg
-    depends: list[PathArg]
+    path: StrPath
+    depends: list[StrPath]
     # command may take the same class as Self, including derived subclasses
     command: Callable[[Self], list[str]] | list[str]
     auto_register: bool = field(default=True, repr=False)
