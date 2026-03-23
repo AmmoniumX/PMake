@@ -62,8 +62,15 @@ def is_stale(target: Target) -> bool:
     return False
 
 
+async def run_task(*args: str, silent: bool = False):
+    if not silent:
+        print(*args)
+    return await asyncio.create_subprocess_exec(*args)
+
+
 async def build_target(target: Target):
-    deps = [target_builders[dep] for dep in target.depends if dep in target_builders]
+    tdeps = cast(list[Path], target.depends)
+    deps = [target_builders[dep] for dep in tdeps if dep in target_builders]
     await asyncio.gather(*[build_target(dep) for dep in deps])
 
     if not is_stale(target):
@@ -72,7 +79,7 @@ async def build_target(target: Target):
 
     command = target.get_command()
     print(f"{target.path}:", *command)
-    result = await asyncio.create_subprocess_exec(*command)
+    result = await run_task(*command, silent=True)
     await result.wait()
     if result.returncode != 0:
         raise subprocess.CalledProcessError(result.returncode or -1, target.path)
