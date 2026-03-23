@@ -23,7 +23,7 @@ class Target:
     path: PathArg
     depends: list[PathArg]
     # command may take the same class as Self, including derived subclasses
-    command: Callable[[Self], list[str]]
+    command: Callable[[Self], list[str]] | list[str]
     auto_register: bool = field(default=True, repr=False)
 
     def __post_init__(self):
@@ -32,6 +32,11 @@ class Target:
 
         if self.auto_register:
             register_target(self)
+
+    def get_command(self) -> list[str]:
+        if callable(self.command):
+            return self.command(self)
+        return self.command
 
 
 def is_stale(target: Target) -> bool:
@@ -65,7 +70,7 @@ async def build_target(target: Target):
         print(f"{target.path} is up to date.")
         return
 
-    command = target.command(target)
+    command = target.get_command()
     print(f"{target.path}:", *command)
     result = await asyncio.create_subprocess_exec(*command)
     await result.wait()
