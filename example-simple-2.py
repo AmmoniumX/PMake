@@ -22,7 +22,7 @@ CFLAGS = ["-Wall"]
 
 
 async def clean():
-    return await PMake.run_task("rm", "-f", "example/main", "example/hello.o")
+    return await PMake.run_task("rm -f example/main example/hello.o")
 
 
 t_hello = PMake.Target(

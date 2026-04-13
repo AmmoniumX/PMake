@@ -21,7 +21,7 @@ CFLAGS = ["-Wall"]
 
 t_clean = Task(
     "clean",
-    command=["rm", "-f", "example/main", "example/hello.o"],
+    command="rm -f example/main example/hello.o",
 )
 t_hello = Target(
     "hello", path="example/hello.o", depends=["example/hello.c"], command=compile_obj
