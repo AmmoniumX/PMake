@@ -1,10 +1,9 @@
 import asyncio
-import PMake
 from functools import partial
 
 
 ### Helpers (procedurally generate any target using pure python code) ###
-def compile_target(target: PMake.Target, object: bool = False) -> list[str]:
+def compile_target(target: Target, object: bool = False) -> list[str]:
     inputs = [str(dep) for dep in target.depends]
     args = [CC, *CFLAGS, *inputs]
     if object:
@@ -20,15 +19,14 @@ compile_exe = partial(compile_target, object=False)
 CC = "gcc"
 CFLAGS = ["-Wall"]
 
-
-async def clean():
-    return await PMake.run_task("rm", "-f", "example/main", "example/hello.o")
-
-
-t_hello = PMake.Target(
+t_clean = Task(
+    "clean",
+    command=["rm", "-f", "example/main", "example/hello.o"],
+)
+t_hello = Target(
     "hello", path="example/hello.o", depends=["example/hello.c"], command=compile_obj
 )
-t_main = PMake.Target(
+t_main = Target(
     "main",
     path="example/main",
     depends=["example/main.c", "example/hello.o"],
@@ -45,7 +43,7 @@ async def main():
     # Clean to trigger a full build, just for demonstration
     proc = await clean()
     await proc.wait()
-    await PMake.build_target(t_main)
+    await build_target(t_main)
 
 
 if __name__ == "__main__":

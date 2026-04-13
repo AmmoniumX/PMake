@@ -26,7 +26,9 @@ async def clean():
 #  - if missing dependencies have a target, it will compile those first
 #  - if they don't have a target, this is an error
 # command: either a list of command arguments, or a function that takes a Target and returns one
-tmain = PMake.Target(path="./main", depends=["./main.c"], command=compile_target)
+tmain = PMake.Target(
+    "main", path="./main", depends=["./main.c"], command=compile_target
+)
 
 
 # Finally, this is the "execute" side. Here we can change whatever we want and have it work

@@ -12,10 +12,6 @@ from dataclasses import dataclass
 class CTarget(PMake.Target):
     std: str = "c23"
 
-    # IMPORTANT: if you need to define your own __post_init__, call the super one too!
-    def __post_init__(self):
-        super().__post_init__()
-
 
 # We have a compile function that takes our target (here, CTarget) and
 #  outputs a list of command arguments
@@ -31,7 +27,7 @@ def compile_ctarget(target: CTarget) -> list[str]:
 #  - if they don't have a target, this is an error
 # command: function that takes a self argument (Target or derived class like CTarget),
 #  and returns a list of command arguments
-main = CTarget(path="./main", depends=["./main.c"], command=compile_ctarget)
+main = CTarget("main", path="./main", depends=["./main.c"], command=compile_ctarget)
 
 # Finally, compile our target. This can compile dependencies asynchronously
 asyncio.run(PMake.build_target(main))
