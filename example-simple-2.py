@@ -1,12 +1,20 @@
 import asyncio
 import PMake
+from functools import partial
 
 
-### Helpers (proceturally generate any target using pure python code) ###
-def compile_target(target: PMake.Target) -> list[str]:
+### Helpers (procedurally generate any target using pure python code) ###
+def compile_target(target: PMake.Target, object: bool = False) -> list[str]:
     inputs = [str(dep) for dep in target.depends]
-    return [CC, *CFLAGS, *inputs, "-o", str(target.path)]
+    args = [CC, *CFLAGS, *inputs]
+    if object:
+        args += ["-c"]
+    args += ["-o", str(target.path)]
+    return args
 
+
+compile_obj = partial(compile_target, object=True)
+compile_exe = partial(compile_target, object=False)
 
 ### Recipe ###
 CC = "gcc"
@@ -14,10 +22,17 @@ CFLAGS = ["-Wall"]
 
 
 async def clean():
-    return await PMake.run_task("rm", "-f", "main")
+    return await PMake.run_task("rm", "-f", "main", "hello.o")
 
 
-tmain = PMake.Target(path="./main", depends=["./main.c"], command=compile_target)
+t_hello = PMake.Target(
+    path="example/hello.o", depends=["example/hello.c"], command=compile_obj
+)
+t_main = PMake.Target(
+    path="example/main",
+    depends=["example/main.c", "example/hello.o"],
+    command=compile_exe,
+)
 
 
 ### Execute Recipe ###
@@ -26,9 +41,10 @@ async def main():
     global CC, CFLAGS
     CC = "clang"
     CFLAGS += ["-Wextra", "-O2"]
+    # Clean to trigger a full build, just for demonstration
     proc = await clean()
     await proc.wait()
-    await PMake.build_target(tmain)
+    await PMake.build_target(t_main)
 
 
 asyncio.run(main())
