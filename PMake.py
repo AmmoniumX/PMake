@@ -35,8 +35,7 @@ class Target:
     name: str
     path: str | None
     depends: list[str]
-    type Command = list[str] | str
-    type CommandProperty = Callable[[Self], Command] | Command
+    type CommandProperty = Callable[[Self], list[str]] | list[str]
     # command may take the same class as Self, including derived subclasses
     command: CommandProperty
     predicate: Callable[[Self], bool] | bool | None = field(default=None)
@@ -50,8 +49,8 @@ class Target:
 
     def get_command(self) -> list[str]:
         if callable(self.command):
-            return parse_command(self.command(self))
-        return parse_command(self.command)
+            return self.command(self)
+        return self.command
 
     def get_predicate(self) -> bool:
         predicate = require(
@@ -62,7 +61,7 @@ class Target:
         return predicate
 
 
-def parse_command(c: Target.Command | tuple[str, ...]) -> list[str]:
+def parse_command(c: str | list[str] | tuple[str, ...]) -> list[str]:
     if isinstance(c, str):
         return c.split()
     if isinstance(c, (list, tuple)) and len(c) == 1 and isinstance(c[0], str):
@@ -77,6 +76,17 @@ def Task(
 ):
     return Target(
         name, path=None, depends=[], command=command, predicate=True, explicit=True
+    )
+
+
+def SimpleTask(name: str, command: str):
+    return Target(
+        name,
+        path=None,
+        depends=[],
+        command=parse_command(command),
+        predicate=True,
+        explicit=True,
     )
 
 
@@ -111,10 +121,13 @@ def must_build(target: Target) -> bool:
 
 
 async def run_task(*args: str, silent: bool = False):
-    command = parse_command(args)
     if not silent:
-        print("Running task", *command)
-    return await asyncio.create_subprocess_exec(*command)
+        print("Running task", *args)
+    return await asyncio.create_subprocess_exec(*args)
+
+
+async def run_simple_task(cmd: str, silent: bool = False):
+    return await run_task(*parse_command(cmd), silent=silent)
 
 
 async def build_target(target: Target):

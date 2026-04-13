@@ -19,7 +19,7 @@ compile_exe = partial(compile_target, object=False)
 CC = "gcc"
 CFLAGS = ["-Wall"]
 
-t_clean = Task(
+t_clean = SimpleTask(
     "clean",
     command="rm -f example/main example/hello.o",
 )
