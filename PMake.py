@@ -3,16 +3,14 @@ import subprocess
 import os
 from pathlib import Path
 from dataclasses import dataclass, field
-from typing import Callable, Self, cast
-
-type StrPath = str | os.PathLike
+from typing import Callable, Self
 
 target_builders: dict[Path, Target] = dict()
 
 
 def register_target(t: Target):
-    path = cast(Path, t.path)  # We know its Path from postinit
-    if t.path in target_builders:
+    path = Path(t.path)
+    if path in target_builders:
         raise Exception(f"There is already a target for the path {t.path}")
     target_builders[path] = t
 
@@ -21,16 +19,13 @@ def register_target(t: Target):
 
 @dataclass()
 class Target:
-    path: StrPath
-    depends: list[StrPath]
+    path: str
+    depends: list[str]
     # command may take the same class as Self, including derived subclasses
     command: Callable[[Self], list[str]] | list[str]
     auto_register: bool = field(default=True, repr=False)
 
     def __post_init__(self):
-        self.path = Path(self.path)
-        self.depends = [Path(dep) for dep in self.depends]
-
         if self.auto_register:
             register_target(self)
 
@@ -48,9 +43,8 @@ def is_stale(target: Target) -> bool:
     - any dependency is newer than the target itself.
     """
 
-    # Inform the type checker we know path and deps are Path from postinit
-    path = cast(Path, target.path)
-    deps = cast(list[Path], target.depends)
+    path = Path(target.path)
+    deps = [Path(d) for d in target.depends]
 
     if not path.is_file():
         return True
@@ -69,7 +63,7 @@ async def run_task(*args: str, silent: bool = False):
 
 
 async def build_target(target: Target):
-    tdeps = cast(list[Path], target.depends)
+    tdeps = [Path(d) for d in target.depends]
     deps = [target_builders[dep] for dep in tdeps if dep in target_builders]
     await asyncio.gather(*[build_target(dep) for dep in deps])
 
